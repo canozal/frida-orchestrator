@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frida_orchestrator"
+version = "0.1.0"
+description = "A tool to orchestrate Frida environment setup for mobile security testing."
+authors = [
+  { name="Security Engineer", email="user@example.com" },
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click",
+    "rich",
+    "requests",
+]
+
+[project.scripts]
+frida-orch = "frida_orchestrator.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
