@@ -15,6 +15,9 @@
 ### Prerequisites
 *   Python 3.10+
 *   `adb` (Android Debug Bridge) installed and in your PATH.
+*   **`frida-tools`** (Frida Client) installed on your computer.
+    *   *Why?* The tool detects your local `frida-client` version to ensure it installs the exactly matching `frida-server` on the device.
+    *   To install: `pip install frida-tools`
 
 ### Install from Source
 
