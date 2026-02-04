@@ -69,6 +69,9 @@ Installing Frida Server...
 Frida Server started!
 ```
 
+## 📚 Documentation
+- [Frida Cheat Sheet](docs/frida_cheatsheet.md): A comprehensive guide to Frida CLI, JavaScript API, and useful snippets.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
