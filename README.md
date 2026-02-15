@@ -72,6 +72,19 @@ Frida Server started!
 ## 📚 Documentation
 - [Frida Cheat Sheet](docs/frida_cheatsheet.md): A comprehensive guide to Frida CLI, JavaScript API, and useful snippets.
 
+## ❗ Troubleshooting
+
+### Android 16 (Preview) / API 36 Process Visibility
+On Android 16 Preview images, `frida-ps -U` may fail to list user applications even with root access. This causes errors like `unable to find process with name '...'`.
+
+**Workaround:**
+Attach using the Process ID (PID) instead of the package name.
+
+```bash
+# One-liner to find PID and attach
+frida -U -p $(adb shell pidof com.example.package)
+```
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
