@@ -61,8 +61,7 @@ class DeviceManager:
 
         except FileNotFoundError:
             # ADB not installed or not in PATH
-            # In a real app we might log a warning or return specific error state
-            return []
+            raise FileNotFoundError("adb command not found. Please ensure Android SDK Platform-Tools are installed and in your PATH.")
         except subprocess.CalledProcessError:
             return []
 

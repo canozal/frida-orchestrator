@@ -12,7 +12,12 @@ def scan():
     console.print("[bold cyan]Scanning for devices...[/bold cyan]")
     
     manager = DeviceManager()
-    devices = manager.list_devices()
+    try:
+        devices = manager.list_devices()
+    except FileNotFoundError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        console.print("[yellow]Hint: Add 'platform-tools' to your PATH or install Android SDK.[/yellow]")
+        return
     
     if not devices:
         console.print("[yellow]No devices detected.[/yellow]")

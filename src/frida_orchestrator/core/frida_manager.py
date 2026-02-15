@@ -38,6 +38,18 @@ class FridaManager:
         """
         Main orchestration method for installation.
         """
+        import subprocess
+
+        # 0. Ensure Root
+        if device.platform == 'android':
+            print(f"Ensuring root access on {device.device_id}...")
+            try:
+                subprocess.run(['adb', '-s', device.device_id, 'root'], 
+                             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(['adb', '-s', device.device_id, 'wait-for-device'], check=True)
+            except subprocess.CalledProcessError:
+                print("Warning: Failed to restart adbd as root. Continuing...")
+
         version = self.resolve_version(profile)
         arch = self._map_abi_to_arch(profile.abi)
         
