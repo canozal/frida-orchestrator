@@ -217,6 +217,16 @@ onEnter: function(args) {
 
 ### 💾 Native / Memory
 
+#### 🧠 Native Hooking Explained
+Unlike Java, Native code (C/C++) runs directly on the CPU. We don't have "Classes" to hook easily; we hook **Memory Addresses**.
+
+- **Exports:** Public functions (e.g. `open`, `malloc`) in system libraries (`libc.so`). Easy to hook by name.
+- **Stripped / Private Functions:** Internal game/app logic. No names, only addresses. You must find the **Offset** using tools like Ghidra/IDA.
+- **Pointers (`NativePointer`):** `args[0]` is just a number (address). You must tell Frida how to read it:
+    - `args[0].readUtf8String()` -> Read as text (char*)
+    - `args[0].readInt()` -> Read as integer
+    - `args[0].readByteArray(16)` -> Read raw bytes (structs/buffers)
+
 **Base Address & modules**
 ```javascript
 var baseAddr = Module.findBaseAddress("libnative-lib.so");
@@ -236,13 +246,30 @@ int fd = open("/etc/hosts", O_RDONLY);
 **Frida Script:**
 ```javascript
 Interceptor.attach(exportAddr, {
+    // onEnter: Called BEFORE the native function executes
     onEnter: function(args) {
-        // args are NativePointer
-        // Use readUtf8String, readInt, etc.
-        console.log("open() file: " + args[0].readUtf8String());
+        // args[0] = 1st argument (const char *path) - Address of the string
+        // args[1] = 2nd argument (int oflag) - Integer flags
+        
+        // We must READ the memory at the address args[0] to get the string
+        try {
+            var path = args[0].readUtf8String();
+            console.log("open() called for file: " + path);
+        } catch (e) {
+            console.log("Could not read string arg");
+        }
+        
+        // You can Modify arguments logic here if needed
+        // args[1] = ptr(0); // Force O_RDONLY
     },
+    
+    // onLeave: Called AFTER original function finishes
     onLeave: function(retval) {
-        console.log("open FD: " + retval);
+        // retval = Return Value (File Descriptor - int)
+        console.log("open() returned FD: " + retval.toInt32());
+        
+        // You can Modify return value here
+        // retval.replace(-1); // Return -1 (Error) to the app
     }
 });
 ```
@@ -513,20 +540,24 @@ if (il2cpp) {
 **Scenario:** App uses `fopen` to check for existence of `/system/bin/su`.
 ```javascript
 var openPtr = Module.findExportByName("libc.so", "fopen");
+// 1. Prepare the original function so we can call it later if needed
+// Define signature: ReturnType, [ArgTypes...] -> 'pointer', ['pointer', 'pointer']
 var open = new NativeFunction(openPtr, 'pointer', ['pointer', 'pointer']);
 
+// 2. Replace the function with our own NativeCallback
 Interceptor.replace(openPtr, new NativeCallback(function(pathPtr, modePtr) {
     var path = pathPtr.readUtf8String();
     
+    // Check if app is trying to open 'su'
     if (path.indexOf("/system/bin/su") >= 0) {
         console.log("[!] Blocked Root Check: " + path);
         // Return NULL (0) to simulate "File not found"
         return ptr(0);
     }
     
-    // Call original fopen for normal files
+    // 3. For all other files, call the ORIGINAL open function
     return open(pathPtr, modePtr);
-}, 'pointer', ['pointer', 'pointer']));
+}, 'pointer', ['pointer', 'pointer'])); // Must match original signature
 ```
 
 ### 🔌 Frida Gadget (Non-Rooted)
