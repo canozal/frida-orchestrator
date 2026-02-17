@@ -478,25 +478,67 @@ if (antiDebugPtr) {
 ```
 
 ### 🎨 Manipulating UI Thread (Real World: Update Text)
+
 **Scenario:** Change a "LOCKED" status text to "UNLOCKED" on the screen.
+
+**Critical Concept:**
+Android crashes if you touch UI elements (TextViews, Buttons) from a background thread (where Frida hooks run by default). You MUST wrap your code in `Java.scheduleOnMainThread(...)`.
+
+**Java Code (Target):**
+```java
+// MainActivity.java
+public class MainActivity extends Activity {
+    TextView statusText; // ID: R.id.status_label
+    
+    void updateStatus(boolean premium) {
+        if (premium) statusText.setText("UNLOCKED");
+        else statusText.setText("LOCKED");
+    }
+}
+```
+
+**Frida Script 1: Show Toast (Simple)**
 ```javascript
 Java.perform(function() {
-    // Find the TextView instance (requires Java.choose or UI traversal usually)
-    // Here we just show how to run on UI thread safely
+    // Runnable that executes on the UI thread
     Java.scheduleOnMainThread(function() {
-        try {
-             // Example: if we had a reference to a TextView 'tvStatus'
-            // tvStatus.setText("UNLOCKED (Hacked via Frida)");
+        var Toast = Java.use("android.widget.Toast");
+        var verify = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
+        Toast.makeText(verify, "Hacked by Frida! 🔓", 1).show();
+    });
+});
+```
+
+**Frida Script 2: Modify Existing TextView (Advanced)**
+```javascript
+Java.perform(function() {
+    // 1. Find the Activity instance currently running
+    Java.choose("com.example.app.MainActivity", {
+        onMatch: function(instance) {
+            console.log("[*] Found MainActivity instance");
             
-            // Toast is the easiest visual confirmation
-            var Toast = Java.use("android.widget.Toast");
-            var ActivityThread = Java.use("android.app.ActivityThread");
-            var context = ActivityThread.currentApplication().getApplicationContext();
-            var text = Java.use("java.lang.String").$new("🔓 Premium Unlocked!");
-            Toast.makeText(context, text, 1).show();
-        } catch(e) {
-            console.error(e);
-        }
+            // 2. Schedule UI update on Main Thread
+            Java.scheduleOnMainThread(function() {
+                // 3. Find the TextView by ID (need to reverse R.id.status_label or use getIdentifier)
+                // Let's assume we know the ID integer or look it up by name:
+                var resId = instance.getResources().getIdentifier("status_label", "id", "com.example.app");
+                var tv = instance.findViewById(resId);
+                
+                if (tv != null) {
+                    // Check logic
+                    var TextView = Java.use("android.widget.TextView");
+                    // Cast generic View to TextView
+                    var tvCast = Java.cast(tv, TextView);
+                    
+                    console.log("[*] Old Text: " + tvCast.getText());
+                    tvCast.setText("UNLOCKED (Hacked) 🔓");
+                    tvCast.setTextColor(0xFF00FF00); // Green
+                } else {
+                    console.log("[-] TextView not found!");
+                }
+            });
+        },
+        onComplete: function() {}
     });
 });
 ```
