@@ -273,6 +273,25 @@ Java.perform(function() {
 
 ### 🏗 Constructor Hooking (Real World: License Bypass)
 **Scenario:** An app checks license status immediately upon object creation.
+
+**Java Code (Target):**
+```java
+// package com.premium.app;
+public class LicenseManager {
+    private String key;
+    private int type; // 0=Free, 1=Pro
+
+    public LicenseManager(String licenseKey, int type) {
+        this.key = licenseKey;
+        this.type = type;
+        if (type == 0) {
+            checkOnlineValidation(licenseKey); 
+        }
+    }
+}
+```
+
+**Frida Script:**
 ```javascript
 Java.perform(function() {
     // Target class: com.premium.app.LicenseManager
@@ -283,6 +302,8 @@ Java.perform(function() {
         console.log("[*] LicenseManager initialized with Key: " + licenseKey);
         
         // Force the app to think a valid "Pro" license (type 1) is used, regardless of input
+        // Original call: new LicenseManager("invalid_key", 0);
+        // Modified call: new LicenseManager("invalid_key", 1);
         this.$init(licenseKey, 1); 
         console.log("[+] Modified to PRO license type!");
     };
@@ -291,6 +312,21 @@ Java.perform(function() {
 
 ### ⏱ Timing / Anti-Debug Bypass
 **Scenario:** App crashes if a function takes too long (detecting debugging/hooking latency).
+
+**C Code (Target):**
+```c
+// libsecurity.so
+void check_debugger_timing() {
+    long start = get_time();
+    complex_calculation(); // Should take 1ms
+    long end = get_time();
+    if ((end - start) > 10) { 
+        exit(0); // Debugger detected!
+    }
+}
+```
+
+**Frida Script:**
 ```javascript
 var startTime = 0;
 // Hypothetical anti-debug function
@@ -341,7 +377,18 @@ Java.perform(function() {
 
 **Hook via Offset (Unity/Il2cpp Game)**
 **Scenario:** Hooking `get_Gold()` method in a Unity game (libil2cpp.so).
-1. **Find Offset:** Use Il2CppDumper or Ghidra. Let's say `Player::get_Gold` is at offset `0x123456`.
+
+**C++ Code (Target):**
+```cpp
+// Decompiled via Ghidra/IDA
+class Player {
+    int gold;
+public:
+    int get_Gold() { return this->gold; } // Offset: 0x123456
+};
+```
+
+**Frida Script:**
 ```javascript
 var il2cpp = Module.findBaseAddress("libil2cpp.so");
 if (il2cpp) {
