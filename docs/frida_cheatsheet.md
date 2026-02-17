@@ -85,6 +85,27 @@ Java.perform(function() {
 ```
 
 **Hooking a Method**
+
+**Java Code (Target):**
+```java
+package com.example.app;
+
+public class MainActivity {
+    // Basic boolean method
+    public boolean isPremium() {
+        return false;
+    }
+
+    // Method with arguments (Overloads) 
+    public void login(String username, String password) {
+        if (checkCreds(username, password)) {
+            // success
+        }
+    }
+}
+```
+
+**Frida Script:**
 ```javascript
 Java.perform(function() {
     var MainActivity = Java.use("com.example.app.MainActivity");
@@ -104,6 +125,19 @@ Java.perform(function() {
 ```
 
 **Finding Instances (Java.choose)**
+
+**Java Code (Target):**
+```java
+// User object instance exists in heap
+// package com.example.app;
+public class UserManager {
+    public void setAdmin(boolean value) {
+        this.isAdmin = value;
+    }
+}
+```
+
+**Frida Script:**
 ```javascript
 Java.choose("com.example.app.UserManager", {
     onMatch: function(instance) {
@@ -127,6 +161,19 @@ var CastedObj = Java.cast(somePtr, Java.use("com.example.Class"));
 ### 🍎 iOS (Objective-C)
 
 **Hooking a Method**
+
+**Objective-C Code (Target):**
+```objective-c
+@interface UserContext : NSObject
+- (BOOL)isLoggedIn; 
+@end
+
+@implementation UserContext
+- (BOOL)isLoggedIn { return NO; }
+@end
+```
+
+**Frida Script:**
 ```javascript
 if (ObjC.available) {
     // -[ClassName methodName:arg1]
@@ -149,6 +196,16 @@ if (ObjC.available) {
 ```
 
 **Reading Arguments (ObjC)**
+
+**Objective-C Code (Target):**
+```objective-c
+// Example Logger Class
+- (void)logMessage:(NSString *)msg {
+    NSLog(@"%@", msg);
+}
+```
+
+**Frida Script:**
 ```javascript
 // method: - (void)logMessage:(NSString *)msg;
 onEnter: function(args) {
@@ -169,6 +226,14 @@ var exportAddr = Module.findExportByName("libc.so", "open");
 ```
 
 **Interceptor (Native Hooks)**
+
+**C Code (Target):**
+```c
+// extern "C" int open(const char *path, int oflag, ...);
+int fd = open("/etc/hosts", O_RDONLY);
+```
+
+**Frida Script:**
 ```javascript
 Interceptor.attach(exportAddr, {
     onEnter: function(args) {
@@ -200,6 +265,17 @@ ptr(0x12345678).writeByteArray([0x90, 0x90, 0x90]); // NOP
 ## 🧪 Common Snippets
 
 ### SSL Pinning Bypass (Generic Java)
+
+**Java Code (Target):**
+```java
+// TrustManagerImpl.java (Android Framework)
+public List<X509Certificate> checkTrustedRecursive(X509Certificate[] certs, String str, String str2, boolean bool) {
+    // Verify certificate chain...
+    throw new CertificateException("Not trusted");
+}
+```
+
+**Frida Script:**
 ```javascript
 Java.perform(function() {
     var array_list = Java.use("java.util.ArrayList");
@@ -213,6 +289,18 @@ Java.perform(function() {
 ```
 
 ### Root Detection Bypass (File Check)
+
+**C Code (Target):**
+```c
+// Checks if 'su' binary exists
+FILE *f = fopen("/system/bin/su", "r");
+if (f != NULL) {
+    // Root detected!
+    fclose(f);
+}
+```
+
+**Frida Script:**
 ```javascript
 var openPtr = Module.findExportByName(null, "open");
 var suPaths = ["/system/bin/su", "/system/xbin/su"];
@@ -230,6 +318,19 @@ Interceptor.attach(openPtr, {
 ```
 
 ### String Decrypt / Logger
+
+**Java Code (Target):**
+```java
+package com.example;
+public class Encryption {
+    public byte[] encrypt(byte[] data) {
+         // AES/RSA encryption...
+        return encryptedData;
+    }
+}
+```
+
+**Frida Script:**
 ```javascript
 // Useful for hooking encryption functions
 // void encrypt(byte[] data)
